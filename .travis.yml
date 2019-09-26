@@ -1,6 +1,9 @@
-language: python
+language: minimal
 
-sudo: false
+addons:
+  snaps:
+    - name: conda
+      channel: latest/edge
 
 matrix:
   include:
@@ -19,13 +22,17 @@ matrix:
     - env: ENV_FILE="ci/travis/37-latest-conda-forge.yaml"
     - env: ENV_FILE="ci/travis/37-dev.yaml" DEV=true
 
+before_install:
+  - sudo env "PATH=$PATH" conda update conda
+
 install:
-  # Install conda
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  # Configure conda
   - conda config --set always_yes yes --set changeps1 no
-  - conda update conda
+  - conda env create --file="${ENV_FILE}"
+  - conda info
+  - conda env list
+  - conda init bash
+  - conda activate test
   - conda info
 
   # free channel needed for older envs (< py37), see
@@ -33,8 +40,6 @@ install:
   - conda config --set restore_free_channel true
 
   # Install dependencies
-  - conda env create --file="${ENV_FILE}"
-  - source activate test
   - if [ "$DEV" ]; then pip install git+https://github.com/pydata/pandas.git; fi
   - if [ "$DEV" ]; then pip install git+https://github.com/matplotlib/matplotlib.git; fi
   - if [ "$STYLE" ]; then pip install black flake8; fi
